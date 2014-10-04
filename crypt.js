@@ -16,5 +16,22 @@ exports.numToBase64 = function(data) {
 }
 
 exports.xor = function(num1, num2) {
-	return num1.map(function(x, i) { return x ^ num2[i]; });
+	return num1.map(function(x, i) { return x ^ num2[i % num2.length]; });
+}
+
+exports.numToAscii = function(data) {
+	return String.fromCharCode.apply(this, data);
+}
+
+exports.solveSingleCharacterXor = function(data) {
+	var max = -1;
+	var selected = -1;
+	for(var i = 0; i < 256; i++) {
+		var res = exports.numToAscii(exports.xor(data, [i])).split(/[a-zA-Z ]/).length;
+		if (res > max) {
+			selected = i;
+			max = res;
+		}
+	}
+	return exports.numToAscii(exports.xor(data, [selected]));
 }
