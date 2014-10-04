@@ -1,4 +1,5 @@
 var crypt = require("./crypt.js");
+var fs = require("fs");
 
 console.log("*** Challenge 1 ***")
 
@@ -21,8 +22,26 @@ console.log("\n");
 // -------
 
 console.log("*** Challenge 3 ***")
-var c2in = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
+var c3in = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
 with(crypt) {
-console.log("Result  : " + solveSingleCharacterXor(hexToNum(c2in)));
+console.log("Result  : " + solveSingleCharacterXor(hexToNum(c3in)));
 }
+console.log("\n");
 
+// -------
+
+console.log("*** Challenge 4 ***")
+var c4data = fs.readFileSync("4.txt").toString().split("\n");
+with(crypt) {
+	var max = -1;
+	var result = "";
+	c4data.forEach(function(e) {
+		var r = solveSingleCharacterXor(hexToNum(e));
+		var n = numOfAscii(r);
+		if (n > max) {
+			max = n;
+			result = r;
+		}
+	});
+	console.log("Result  : " + result);
+}

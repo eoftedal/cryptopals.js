@@ -23,11 +23,15 @@ exports.numToAscii = function(data) {
 	return String.fromCharCode.apply(this, data);
 }
 
+exports.numOfAscii = function(data) {
+	return data.split(/[a-zA-Z ]/).length
+}
+
 exports.solveSingleCharacterXor = function(data) {
 	var max = -1;
 	var selected = -1;
 	for(var i = 0; i < 256; i++) {
-		var res = exports.numToAscii(exports.xor(data, [i])).split(/[a-zA-Z ]/).length;
+		var res = exports.numOfAscii(exports.numToAscii(exports.xor(data, [i])));
 		if (res > max) {
 			selected = i;
 			max = res;
