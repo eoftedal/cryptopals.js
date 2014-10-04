@@ -109,3 +109,35 @@ with(crypt) {
 	var result = aes256ecb_decrypt(c7data, "YELLOW SUBMARINE");
 	console.log("Result: " + result);
 }
+console.log("\n");
+
+// -------
+
+
+console.log("*** Challenge 8 ***")
+var c8data = fs.readFileSync("8.txt").toString().split("\n");
+var totalMax = -1;
+var ecb = null;
+c8data.forEach(function(ciphertext) {
+	var counter = {};
+	var dupCount = 0;
+	for(var i = 0; i < ciphertext.length; i += 32) { //32 because each byte is 2 chars when hex encoded
+		var block = ciphertext.slice(i, i + 32) 
+		counter[block] = (counter[block] || 0) + 1;
+		if (counter[block] > 1) {
+			dupCount = dupCount + (counter[block] == 2 ? 2 : 1);
+			console.log("Duplicate: " + block);
+		}
+	}
+	if (dupCount > totalMax) {
+		totalMax = dupCount;
+		ecb = ciphertext;
+	}
+});
+console.log("Repititions: " + totalMax);
+console.log(ecb);
+
+
+
+
+
