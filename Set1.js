@@ -58,8 +58,44 @@ console.log("Result  : " + [c5plain].map(asciiToNum).map(function(x) { return xo
 }
 console.log("\n");
 
+// -------
 
-
-
+console.log("*** Challenge 6 ***")
+with(crypt) {
+	console.log("Hamm is " + hamm(asciiToNum("this is a test"), asciiToNum("wokka wokka!!!")));
+	var c6data = hexToNum(new Buffer(fs.readFileSync("6.txt").toString(),'base64').toString('hex'));
+	var dt = [];
+	for (var i = 2; i <= 40; i++) {
+		var a = hamm(c6data.slice(0, i), c6data.slice(i, 2*i)) / i;
+		var b = hamm(c6data.slice(0, i), c6data.slice(2*i, 3*i)) / i;
+		var c = hamm(c6data.slice(0, i), c6data.slice(3*i, 4*i)) / i;
+		var d = hamm(c6data.slice(i, i*2), c6data.slice(2*i, 3*i)) / i;
+		var e = hamm(c6data.slice(2*i, i*2), c6data.slice(3*i, 4*i)) / i;
+		var score = Math.floor((a+b+c+d+e)/5.0 * 100);
+		dt[score] = i;
+	}
+	dt = dt.filter(function(x) { return x != null }).slice(0,3);
+	console.log("Best key lengths", dt);
+	var max = -1;
+	var result = "";
+	console.log("Result: ")
+	dt.forEach(function(klen){
+		var blocks = [];
+		for (var i = 0; i < c6data.length; i += klen) {
+			blocks.push(c6data.slice(i, i + klen));
+		}
+		var key = [];
+		for (var i = 0; i < klen; i++) {
+			key.push(solveSingleCharacterXorWithKey(blocks.map(function(b) { return b[i]; })).key);
+		}
+		var r = numToAscii(xor(c6data, key));
+		var score = r.replace(/[^a-z]/ig, "").length;
+		if (score > max) {
+			result = r;
+			max = score;
+		}
+	});
+	console.log(result);
+}
 
 

@@ -33,6 +33,9 @@ exports.numOfAscii = function(data) {
 }
 
 exports.solveSingleCharacterXor = function(data) {
+	return exports.solveSingleCharacterXorWithKey(data).result;
+}
+exports.solveSingleCharacterXorWithKey = function(data) {
 	var max = -1;
 	var selected = -1;
 	for(var i = 0; i < 256; i++) {
@@ -42,5 +45,15 @@ exports.solveSingleCharacterXor = function(data) {
 			max = res;
 		}
 	}
-	return exports.numToAscii(exports.xor(data, [selected]));
+	return { key: selected, result: exports.numToAscii(exports.xor(data, [selected])) };
 }
+
+exports.bits = function(data) {
+	return data.map(function(n) { return n.toString("2")}).join("").replace(/0/g, "").length;
+}
+
+exports.hamm = function(ascii1, ascii2) {
+	return exports.bits(exports.xor(ascii1, ascii2));
+}
+
+
