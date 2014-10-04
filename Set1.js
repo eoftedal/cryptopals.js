@@ -98,4 +98,14 @@ with(crypt) {
 	console.log(result);
 }
 
+console.log("\n");
 
+// -------
+
+
+console.log("*** Challenge 7 ***")
+with(crypt) {
+	var c7data = fs.readFileSync("7.txt").toString();
+	var result = aes256ecb_decrypt(c7data, "YELLOW SUBMARINE");
+	console.log("Result: " + result);
+}

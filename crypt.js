@@ -1,3 +1,4 @@
+var crypto = require("crypto");
 
 exports.hexToNum = function(data) {
 	var result = [];
@@ -54,6 +55,15 @@ exports.bits = function(data) {
 
 exports.hamm = function(ascii1, ascii2) {
 	return exports.bits(exports.xor(ascii1, ascii2));
+}
+
+exports.aes256ecb_decrypt = function(datab64, key) {
+	var cipher = crypto.createDecipheriv("aes-128-ecb", key, '');
+	cipher.setAutoPadding(false);
+	var result = [];
+	result.push(cipher.update(datab64, 'base64').toString('ascii'));
+	result.push(cipher.final('ascii'));
+	return result.join("");
 }
 
 
