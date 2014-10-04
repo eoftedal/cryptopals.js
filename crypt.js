@@ -7,6 +7,14 @@ exports.hexToNum = function(data) {
 	return result;
 }
 
+exports.numToHex = function(data) {
+	return data.map(function(x) { return (x < 16 ? '0' : '') + x.toString(16); }).join("");
+}
+
 exports.numToBase64 = function(data) {
 	return new Buffer(data).toString('base64');
+}
+
+exports.xor = function(num1, num2) {
+	return num1.map(function(x, i) { return x ^ num2[i]; });
 }
