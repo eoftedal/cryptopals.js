@@ -22,6 +22,11 @@ exports.xor = function(num1, num2) {
 exports.numToAscii = function(data) {
 	return String.fromCharCode.apply(this, data);
 }
+exports.asciiToNum = function(data) {
+	var result = [];
+	for (var i in data) { result.push(data.charCodeAt(i)); }
+	return result;
+}
 
 exports.numOfAscii = function(data) {
 	return data.split(/[a-zA-Z ]/).length
