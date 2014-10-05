@@ -66,4 +66,12 @@ exports.aes256ecb_decrypt = function(datab64, key) {
 	return result.join("");
 }
 
+exports.pkcs7pad = function(data, length) {
+	var padlen = length - (data.length % length);
+	var result = data.slice(0);
+	for (var i = 0; i < padlen; i++) result.push(padlen);
+	return result;
+
+}
+
 
