@@ -92,5 +92,29 @@ exports.cbcDecrypt = function(data, key, iv) {
 	}
 	return result.map(exports.numToAscii).join("");
 }
+exports.generateKey = function(length) {
+	return crypto.randomBytes(length);
+}
+
+exports.encryption_oracle = function(plain) {
+	var pre = crypto.randomBytes(crypto.randomBytes(1)[0] % 5 + 5);
+	var post = crypto.randomBytes(crypto.randomBytes(1)[0] % 5 + 5);
+	var data = Buffer.concat([pre, new Buffer(plain), post]);
+	var key = exports.generateKey(16);
+	var cbc = crypto.randomBytes(1)[0] < 128;
+	var iv = '';
+	var algo = 'aes-128-ecb';
+	if (cbc) {
+		iv = crypto.randomBytes(16);
+		algo = 'aes-128-cbc';
+	}
+	console.log("Actual  : " + (cbc ? "CBC" : "ECB"));
+	var cipher = crypto.createCipheriv(algo, key, iv);
+	cipher.setAutoPadding(true);
+	var buf = cipher.update(new Buffer(data), null, 'base64');
+	buf = buf.concat(cipher.final('base64'));
+	return exports.base64ToNum(buf);
+
+}
 
 
