@@ -15,6 +15,9 @@ exports.numToHex = function(data) {
 exports.numToBase64 = function(data) {
 	return new Buffer(data).toString('base64');
 }
+exports.base64ToNum = function(data) {
+	return exports.hexToNum(new Buffer(data, 'base64').toString('hex'));
+}
 
 exports.xor = function(num1, num2) {
 	return num1.map(function(x, i) { return x ^ num2[i % num2.length]; });
@@ -60,10 +63,17 @@ exports.hamm = function(ascii1, ascii2) {
 exports.aes256ecb_decrypt = function(datab64, key) {
 	var cipher = crypto.createDecipheriv("aes-128-ecb", key, '');
 	cipher.setAutoPadding(false);
-	var result = [];
-	result.push(cipher.update(datab64, 'base64').toString('ascii'));
-	result.push(cipher.final('ascii'));
-	return result.join("");
+	var buf = cipher.update(datab64, 'base64');
+	buf = Buffer.concat([buf, cipher.final()]);
+	return exports.hexToNum(buf.toString('hex'));
+}
+
+exports.aes256ecb_encrypt = function(data, key) {
+	var cipher = crypto.createCipheriv("aes-128-ecb", key, '');
+	cipher.setAutoPadding(false);
+	var result = cipher.update(data, 'binary', 'binary');
+	result = result.concat(cipher.final('binary'));
+	return result.toString('hex');
 }
 
 exports.pkcs7pad = function(data, length) {
@@ -71,7 +81,16 @@ exports.pkcs7pad = function(data, length) {
 	var result = data.slice(0);
 	for (var i = 0; i < padlen; i++) result.push(padlen);
 	return result;
+}
 
+exports.cbcDecrypt = function(data, key, iv) {
+	var ecb = exports.aes256ecb_decrypt(data, key);
+	var ciph = iv.concat(exports.base64ToNum(data));
+	var result = [];
+	for (var i = 0; i < data.length; i+= iv.length) {
+		result.push(exports.xor(ecb.slice(i, i + iv.length), ciph.slice(i, i + iv.length)));
+	}
+	return result.map(exports.numToAscii).join("");
 }
 
 
