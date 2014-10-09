@@ -26,7 +26,14 @@ with(crypt) {
 		}
 	}
 
-
-
-
+// ----
+	console.log("\n")
+	console.log("*** Challenge 12 ***");
+	var c12len = detect_key_length();
+	console.log("Detected key length: " + c12len);
+	var buf = new Buffer(c12len * 2);
+	buf.fill('A');
+	var c12_det = numToHex(encryption_oracle_ecb(buf.toString()));
+	console.log("Is CBC? " + (c12_det.substring(0, c12len*2) == c12_det.substring(c12len*2, c12len * 4)));
+	oracle_decrypt(c12len);
 }

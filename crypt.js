@@ -114,7 +114,71 @@ exports.encryption_oracle = function(plain) {
 	var buf = cipher.update(new Buffer(data), null, 'base64');
 	buf = buf.concat(cipher.final('base64'));
 	return exports.base64ToNum(buf);
-
 }
+exports.encryption_oracle_ecb = function(plain) {
+	var data = new Buffer(plain).toString('hex') + new Buffer("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK", 'base64').toString('hex');
+	//console.log('->' + data);
+	//console.log(data.substring(0, 16*2), data.substring(9*16*2, 9*16*2 + 16*2));
+
+	data = exports.hexToNum(data);
+	var key = [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5];
+	var cipher = crypto.createCipheriv('aes-128-ecb', new Buffer(key), '');
+	cipher.setAutoPadding(true);
+	var buf = cipher.update(new Buffer(data), null, 'base64');
+	buf = buf.concat(cipher.final('base64'));
+	return exports.base64ToNum(buf);
+}
+
+exports.detect_key_length = function() {
+	var plain = [];
+	var prev = '';
+	var prev2 = '';
+	for (var i = 0; i < 20; i++) {
+		plain.push("A");
+		var cipher = exports.numToHex(exports.encryption_oracle_ecb(exports.asciiToNum(plain.join(""))));
+		if(prev2 && prev) {
+			for (var j = 2; j < 20; j++) {
+				if (prev.substring(0, j) == prev2.substring(0, j) && cipher.substring(0, j) == prev.substring(0, j)) {
+					return i - 1;
+				}
+			}
+		}
+		prev2 = prev;
+		prev = cipher;
+	}
+}
+exports.oracle_decrypt = function(length) {
+	var cipherlen = exports.encryption_oracle_ecb("").length;
+	var result = [];
+	var cblocks = Math.ceil(cipherlen/length);
+	for(var i = 0; i < cipherlen; i++) {
+		var blocks = Math.floor(result.length / length) + 1;
+		var buf = new Buffer(length + cblocks * length - 1 - result.length);
+		buf.fill('A');
+		var c = 0;
+		for (var k = result.length; k >= 0; k--) {
+			buf[length - ++c] = result[k];
+			if (c == length) break;
+		}
+		for(var j = 0; j < 256; j++) {
+			buf[15] = j;
+			var cipher = exports.numToHex(exports.encryption_oracle_ecb(buf));
+			if (cipher.substring(0, length*2) == cipher.substring(cblocks*length*2, cblocks*length*2 + length*2)) {
+				result.push(j);
+				break;
+			}
+		}
+		console.log(exports.numToAscii(result).replace(/\n/g, '\\n'));
+	}
+	var pad = result[result.length - 1];
+	for (var i = 0; i < pad; i++) {
+		result.pop();
+	}
+	console.log("\nFinal result:\n" + exports.numToAscii(result));
+}
+
+
+
+
 
 
