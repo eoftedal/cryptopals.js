@@ -177,7 +177,25 @@ exports.oracle_decrypt = function(length) {
 	console.log("\nFinal result:\n" + exports.numToAscii(result));
 }
 
+exports.parseParameters = function(x) {
+	var obj = {};
+	x.split(/&/g).forEach(function(n) {  
+		var ar = n.split(/=/);
+		obj[ar[0]] = ar[1];
+	});
+	return obj;
+}
 
+exports.profile_for = function(email) {
+	var obj = { email: email.replace(/[&=]/g, ""), uid: 10, role: 'user'};
+	var res = "";
+	var delim = "";
+	for (var i in obj) {
+		res += delim + i + "=" + obj[i];
+		delim = "&";
+	}
+	return res;
+}
 
 
 
