@@ -1,36 +1,29 @@
 var crypto = require("crypto");
 
-exports.hexToNum = function(data) {
-	var result = [];
-	for(var i = 0; i < data.length; i += 2) {
-		result.push(parseInt(data[i] + data[i + 1], 16));
-	}
-	return result;
+String.prototype.hexDecode = function() {
+	return this.match(/../g).map(function(n) { return parseInt(n, 16); });
 }
 
-exports.numToHex = function(data) {
-	return data.map(function(x) { return (x < 16 ? '0' : '') + x.toString(16); }).join("");
+
+Array.prototype.hexEncode = function() {
+	return this.map(function(x) { return (x < 16 ? '0' : '') + x.toString(16); }).join("");
+}
+Array.prototype.base64Encode = function() {
+	return new Buffer(this).toString('base64');
+}
+String.prototype.base64Decode = function() {
+	return new Buffer(data, 'base64').toString('hex').hexDecode();
+}
+Array.prototype.xor = function(num) {
+	return this.map(function(x, i) { return x ^ num[i % num.length]; });
+}
+Array.prototype.toAscii = function() {
+	return String.fromCharCode.apply(String, data);
+}
+String.prototype.toByteArray = function() {
+	return this.match(/./g).map(function(c) { return c.charCodeAt(0) });
 }
 
-exports.numToBase64 = function(data) {
-	return new Buffer(data).toString('base64');
-}
-exports.base64ToNum = function(data) {
-	return exports.hexToNum(new Buffer(data, 'base64').toString('hex'));
-}
-
-exports.xor = function(num1, num2) {
-	return num1.map(function(x, i) { return x ^ num2[i % num2.length]; });
-}
-
-exports.numToAscii = function(data) {
-	return String.fromCharCode.apply(this, data);
-}
-exports.asciiToNum = function(data) {
-	var result = [];
-	for (var i in data) { result.push(data.charCodeAt(i)); }
-	return result;
-}
 
 exports.numOfAscii = function(data) {
 	return data.split(/[a-zA-Z ]/).length
@@ -43,13 +36,13 @@ exports.solveSingleCharacterXorWithKey = function(data) {
 	var max = -1;
 	var selected = -1;
 	for(var i = 0; i < 256; i++) {
-		var res = exports.numOfAscii(exports.numToAscii(exports.xor(data, [i])));
+		var res = exports.numOfAscii(data.xor([i]).toAscii())
 		if (res > max) {
 			selected = i;
 			max = res;
 		}
 	}
-	return { key: selected, result: exports.numToAscii(exports.xor(data, [selected])) };
+	return { key: selected, result: data.xor([selected]).toAscii() };
 }
 
 exports.bits = function(data) {
@@ -57,7 +50,7 @@ exports.bits = function(data) {
 }
 
 exports.hamm = function(ascii1, ascii2) {
-	return exports.bits(exports.xor(ascii1, ascii2));
+	return exports.bits(ascii1.xor(ascii2));
 }
 
 exports.aes256ecb_decrypt = function(datab64, key) {
@@ -65,7 +58,7 @@ exports.aes256ecb_decrypt = function(datab64, key) {
 	cipher.setAutoPadding(false);
 	var buf = cipher.update(datab64, 'base64');
 	buf = Buffer.concat([buf, cipher.final()]);
-	return exports.hexToNum(buf.toString('hex'));
+	return buf.toString('hex').hexDecode();
 }
 
 exports.aes256ecb_encrypt = function(data, key) {
@@ -85,12 +78,12 @@ exports.pkcs7pad = function(data, length) {
 
 exports.cbcDecrypt = function(data, key, iv) {
 	var ecb = exports.aes256ecb_decrypt(data, key);
-	var ciph = iv.concat(exports.base64ToNum(data));
+	var ciph = iv.concat(data.base64Decode());
 	var result = [];
 	for (var i = 0; i < data.length; i+= iv.length) {
-		result.push(exports.xor(ecb.slice(i, i + iv.length), ciph.slice(i, i + iv.length)));
+		result.push(ecb.slice(i, i + iv.length).xor(ciph.slice(i, i + iv.length)));
 	}
-	return result.map(exports.numToAscii).join("");
+	return result.map(function(x) { return x.toAscii() }).join("");
 }
 exports.generateKey = function(length) {
 	return crypto.randomBytes(length);
@@ -113,20 +106,21 @@ exports.encryption_oracle = function(plain) {
 	cipher.setAutoPadding(true);
 	var buf = cipher.update(new Buffer(data), null, 'base64');
 	buf = buf.concat(cipher.final('base64'));
-	return exports.base64ToNum(buf);
+	return buf.base64Decode();
 }
+
 exports.encryption_oracle_ecb = function(plain) {
 	var data = new Buffer(plain).toString('hex') + new Buffer("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK", 'base64').toString('hex');
 	//console.log('->' + data);
 	//console.log(data.substring(0, 16*2), data.substring(9*16*2, 9*16*2 + 16*2));
 
-	data = exports.hexToNum(data);
+	data = data.hexDecode();
 	var key = [0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5];
 	var cipher = crypto.createCipheriv('aes-128-ecb', new Buffer(key), '');
 	cipher.setAutoPadding(true);
 	var buf = cipher.update(new Buffer(data), null, 'base64');
 	buf = buf.concat(cipher.final('base64'));
-	return exports.base64ToNum(buf);
+	return buf.base64Decode();
 }
 
 exports.detect_key_length = function() {
@@ -135,7 +129,7 @@ exports.detect_key_length = function() {
 	var prev2 = '';
 	for (var i = 0; i < 20; i++) {
 		plain.push("A");
-		var cipher = exports.numToHex(exports.encryption_oracle_ecb(exports.asciiToNum(plain.join(""))));
+		var cipher = exports.encryption_oracle_ecb(plain.join("").toByteArray()).hexEncode();
 		if(prev2 && prev) {
 			for (var j = 2; j < 20; j++) {
 				if (prev.substring(0, j) == prev2.substring(0, j) && cipher.substring(0, j) == prev.substring(0, j)) {
@@ -162,19 +156,19 @@ exports.oracle_decrypt = function(length) {
 		}
 		for(var j = 0; j < 256; j++) {
 			buf[15] = j;
-			var cipher = exports.numToHex(exports.encryption_oracle_ecb(buf));
+			var cipher = exports.encryption_oracle_ecb(buf).hexEncode();
 			if (cipher.substring(0, length*2) == cipher.substring(cblocks*length*2, cblocks*length*2 + length*2)) {
 				result.push(j);
 				break;
 			}
 		}
-		console.log(exports.numToAscii(result).replace(/\n/g, '\\n'));
+		console.log(result.toAscii().replace(/\n/g, '\\n'));
 	}
 	var pad = result[result.length - 1];
 	for (var i = 0; i < pad; i++) {
 		result.pop();
 	}
-	console.log("\nFinal result:\n" + exports.numToAscii(result));
+	console.log("\nFinal result:\n" + result.toAscii());
 }
 
 exports.parseParameters = function(x) {
