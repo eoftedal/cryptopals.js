@@ -12,16 +12,16 @@ Array.prototype.base64Encode = function() {
 	return new Buffer(this).toString('base64');
 }
 String.prototype.base64Decode = function() {
-	return new Buffer(data, 'base64').toString('hex').hexDecode();
+	return new Buffer(this, 'base64').toString('hex').hexDecode();
 }
 Array.prototype.xor = function(num) {
 	return this.map(function(x, i) { return x ^ num[i % num.length]; });
 }
 Array.prototype.toAscii = function() {
-	return String.fromCharCode.apply(String, data);
+	return String.fromCharCode.apply(String, this);
 }
 String.prototype.toByteArray = function() {
-	return this.match(/./g).map(function(c) { return c.charCodeAt(0) });
+	return this.match(/[\s\S]/g).map(function(c) { return c.charCodeAt(0) });
 }
 
 

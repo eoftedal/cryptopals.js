@@ -14,7 +14,7 @@ console.log("*** Challenge 2 ***")
 var c2in = "1c0111001f010100061a024b53535009181c";
 var c2key = "686974207468652062756c6c277320657965"
 console.log("Expected: 746865206b696420646f6e277420706c6179");
-console.log("Result  : " + c2in.hexDecode().xor(c2key.hexDecode()).hexEncode();
+console.log("Result  : " + c2in.hexDecode().xor(c2key.hexDecode()).hexEncode());
 console.log("\n");
 
 // -------
@@ -47,19 +47,18 @@ console.log("\n");
 
 console.log("*** Challenge 5 ***")
 var c5plain = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal";
+console.log(c5plain);
 var c5key = "ICE";
-with(crypt) {
 console.log("Expected: 0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f");
-console.log("Result  : " + [c5plain].map(asciiToNum).map(function(x) { return xor(x, asciiToNum(c5key)) }).map(numToHex).join("\n")  );
-}
+console.log("Result  : " + c5plain.toByteArray().xor(c5key.toByteArray()).hexEncode());
 console.log("\n");
 
 // -------
 
 console.log("*** Challenge 6 ***")
 with(crypt) {
-	console.log("Hamm is " + hamm(asciiToNum("this is a test"), asciiToNum("wokka wokka!!!")));
-	var c6data = hexToNum(new Buffer(fs.readFileSync("6.txt").toString(),'base64').toString('hex'));
+	console.log("Hamm is " + hamm("this is a test".toByteArray(), "wokka wokka!!!".toByteArray()));
+	var c6data = new Buffer(fs.readFileSync("6.txt").toString(),'base64').toString('hex').hexDecode();
 	var dt = [];
 	for (var i = 2; i <= 40; i++) {
 		var a = hamm(c6data.slice(0, i), c6data.slice(i, 2*i)) / i;
@@ -84,7 +83,7 @@ with(crypt) {
 		for (var i = 0; i < klen; i++) {
 			key.push(solveSingleCharacterXorWithKey(blocks.map(function(b) { return b[i]; })).key);
 		}
-		var r = numToAscii(xor(c6data, key));
+		var r = c6data.xor(key).toAscii();
 		var score = r.replace(/[^a-z]/ig, "").length;
 		if (score > max) {
 			result = r;
@@ -103,7 +102,7 @@ console.log("*** Challenge 7 ***")
 with(crypt) {
 	var c7data = fs.readFileSync("7.txt").toString();
 	var result = aes256ecb_decrypt(c7data, "YELLOW SUBMARINE");
-	console.log("Result: " + numToAscii(result));
+	console.log("Result: " + result.toAscii());
 }
 console.log("\n");
 

@@ -3,10 +3,10 @@ var fs = require("fs");
 
 with(crypt) {
 	console.log("*** Challenge 9 ***")
-	var a = asciiToNum("YELLOW SUBMARINE")
+	var a = "YELLOW SUBMARINE".toByteArray();
 	a.push(4); a.push(4); a.push(4); a.push(4);
-	console.log("Expected: " + a);
-	console.log("Result  : " + pkcs7pad(asciiToNum("YELLOW SUBMARINE"), 20));
+	console.log("Expected: " + a.hexEncode());
+	console.log("Result  : " + pkcs7pad("YELLOW SUBMARINE".toByteArray(), 20).hexEncode());
 
 // ----
 	console.log("\n")
@@ -15,6 +15,7 @@ with(crypt) {
 	console.log(cbcDecrypt(c10data, "YELLOW SUBMARINE", [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]));
 
 // ----
+/*
 	console.log("\n")
 	console.log("*** Challenge 11 ***");
 	for (var i = 0; i < 10; i++) {
@@ -65,5 +66,5 @@ with(crypt) {
 	var c13m = c13enc(c13y);
 	c13m = c13m.slice(0, c13m.length - 16);
 	console.log(JSON.stringify( c13dec(c13m.concat(c13block)) ));
-
+*/
 }
