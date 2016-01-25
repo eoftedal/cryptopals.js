@@ -9,10 +9,10 @@ Array.prototype.hexEncode = function() {
 	return this.map(function(x) { return (x < 16 ? '0' : '') + x.toString(16); }).join("");
 }
 Array.prototype.base64Encode = function() {
-	return new Buffer(this).toString('base64');
+	return new Buffer(this.slice()).toString('base64');
 }
 String.prototype.base64Decode = function() {
-	return new Buffer(this, 'base64').toString('hex').hexDecode();
+	return new Buffer(this.toString(), 'base64').toString('hex').hexDecode();
 }
 Array.prototype.xor = function(num) {
 	return this.map(function(x, i) { return x ^ num[i % num.length]; });
