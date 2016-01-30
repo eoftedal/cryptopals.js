@@ -23,6 +23,17 @@ Array.prototype.toAscii = function() {
 String.prototype.toByteArray = function() {
 	return this.match(/[\s\S]/g).map(function(c) { return c.charCodeAt(0) });
 }
+Array.randomBytes = function(n) {
+	return Array.prototype.slice.apply(crypto.randomBytes(n));
+}
+Array.of = function(n, c) {
+	var a = [];
+	for (var i = 0; i < n; i++) a.push(c);
+	return a;
+}
+String.prototype.toByte = function() {
+	return this.charCodeAt(0);
+}
 
 
 exports.numOfAscii = function(data) {
@@ -64,9 +75,9 @@ exports.aes256ecb_decrypt = function(datab64, key) {
 exports.aes256ecb_encrypt = function(data, key) {
 	var cipher = crypto.createCipheriv("aes-128-ecb", key, '');
 	cipher.setAutoPadding(false);
-	var result = cipher.update(data, 'binary', 'binary');
-	result = result.concat(cipher.final('binary'));
-	return result.toString('hex');
+	var result = cipher.update(data, 'binary', 'hex');
+	result += cipher.final('hex');
+	return result;
 }
 
 exports.pkcs7pad = function(data, length) {
@@ -85,6 +96,18 @@ exports.cbcDecrypt = function(data, key, iv) {
 	}
 	return result.map(function(x) { return x.toAscii() }).join("");
 }
+exports.cbcEncrypt = function(data, key, iv) {
+	var pblock = new Buffer(iv);
+	var result = new Buffer([]);
+	for (var i = 0; i < data.length; i  += iv.length) {
+		var b = data.slice(i, i+iv.length).xor(Array.prototype.slice.apply(pblock));
+		var pblock = new Buffer(exports.aes256ecb_encrypt(new Buffer(b), key), 'hex');
+		result = Buffer.concat([result, pblock]);
+	}
+	return result.toString('base64');
+}
+
+
 exports.generateKey = function(length) {
 	return crypto.randomBytes(length);
 }

@@ -2,6 +2,7 @@ var crypt = require("./crypt.js");
 var fs = require("fs");
 
 with(crypt) {
+
 	console.log("*** Challenge 9 ***")
 	var a = "YELLOW SUBMARINE".toByteArray();
 	a.push(4); a.push(4); a.push(4); a.push(4);
@@ -12,7 +13,13 @@ with(crypt) {
 	console.log("\n")
 	console.log("*** Challenge 10 ***");
 	var c10data = fs.readFileSync("10.txt").toString();
-	console.log(cbcDecrypt(c10data, "YELLOW SUBMARINE", [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]));
+	var c10plain = cbcDecrypt(c10data, "YELLOW SUBMARINE", [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0])
+	//console.log(c10plain);
+	var c10ciph = cbcEncrypt(c10plain.toByteArray(), "YELLOW SUBMARINE", [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]);
+	var c10a = c10data.base64Decode().hexEncode();
+	var c10b = c10ciph.base64Decode().hexEncode();
+	console.log("SAME RESULT: " + (c10a == c10b));
+	//console.log(cbcDecrypt(c10ciph, "YELLOW SUBMARINE", [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]))
 
 // ----
 	console.log("\n")
@@ -50,7 +57,7 @@ with(crypt) {
 	function c13enc(email) {
 		var x = crypt.profile_for(email).toByteArray();
 		//console.log('enc', crypt.asciiToNum(crypt.aes256ecb_encrypt(new Buffer(crypt.pkcs7pad(x, 16)), c13key)));
-		return crypt.aes256ecb_encrypt(new Buffer(crypt.pkcs7pad(x, 16)), c13key).toByteArray();
+		return crypt.aes256ecb_encrypt(new Buffer(crypt.pkcs7pad(x, 16)), c13key).hexDecode();
 	}
 	function c13dec(data) {
 		//console.log(data);
@@ -65,4 +72,78 @@ with(crypt) {
 	var c13m = c13enc(c13y);
 	c13m = c13m.slice(0, c13m.length - 16);
 	console.log(JSON.stringify( c13dec(c13m.concat(c13block)) ));
+
+// ----
+
+	console.log("\n")
+	console.log("*** Challenge 14 ***");
+
+	var x = Array.randomBytes(1)[0] % 20;
+	var prefix = Array.randomBytes(x);
+	var key = generateKey(16);
+	var plain = "secret".toByteArray();
+	var prev = "";
+	function enc_p(m) {
+		var d = new Buffer(crypt.pkcs7pad(prefix.concat(m).concat(plain), 16));
+		return crypt.aes256ecb_encrypt(d, key);
+	}
+	for (var i = 0; i < 48; i++) {
+		var h = enc_p(Array.of(i, 0x65));
+		if (h.length >= 32 && prev == h.substring(0,64)) {
+			break;
+		}
+		prev = h.substring(0,64);
+	}
+	i -= 2;
+	var target = enc_p(Array.of(i, 0x65));
+	var t_l = target.length;
+	var result = [];
+	do {
+		var t = target.substring(0,64);
+		for (var j = 0; j < 256; j++) {
+			var t_p = enc_p(Array.of(i, 0x65).concat(result).concat(j));
+			if (t_p.substring(0, 64) == target.substring(0, 64)) {
+				result.push(j);
+				break;
+			}
+		}
+		i--;
+		target = enc_p(Array.of(i, 0x65));
+		console.log(i, result.toAscii());
+		
+	} while(target.length == t_l);
+	console.log("PLAIN : " + plain.toAscii());
+	console.log("RESULT: " + result.toAscii());
+
+//---
+
+	console.log("\n")
+	console.log("*** Challenge 15 ***");
+	var c15_key = generateKey(16);
+	var c15_iv = Array.prototype.slice.apply(generateKey(16));
+	function c15_encrypt(data) {
+		for (var i = 0; i < data.length; i++) {
+			if (data[i] == ";".toByte() || data[i] == "=".toByte()){
+				data[i] = "_".toByte();
+			}
+		}
+		var dt = "comment1=cooking%20MCs;userdata=".toByteArray().concat(data).concat(";comment2=%20like%20a%20pound%20of%20bacon".toByteArray());
+		return crypt.cbcEncrypt(crypt.pkcs7pad(dt, 16), c15_key, c15_iv).base64Decode();
+	}
+	function c15_check(cipher) {
+		var k = crypt.cbcDecrypt(cipher.base64Encode(), c15_key, c15_iv);
+		return k.indexOf(";admin=true;") > -1;
+	}
+	var c15res = c15_encrypt("0123456789abcdef;admin=true".toByteArray());
+	console.log("HAS ;admin=true; BEFORE FLIPS: ", c15_check(c15res));
+	c15res[32] ^= "_".toByte() ^ ";".toByte();
+	c15res[38] ^= "_".toByte() ^ "=".toByte();
+	console.log("HAS ;admin=true; AFTER FLIPS : ", c15_check(c15res));
 }
+
+
+
+
+
+
+
