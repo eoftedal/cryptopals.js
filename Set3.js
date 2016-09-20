@@ -60,7 +60,7 @@ with(crypt) {
 	})();
 
 	(function() { 
-		console.log("*** Challenge 17 ***");
+		console.log("*** Challenge 18 ***");
 		var key = "YELLOW SUBMARINE".toByteArray();
 		var cipher = "L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==".base64Decode();
 		var out = aesctr(key, Array.of(8, 0), cipher);
