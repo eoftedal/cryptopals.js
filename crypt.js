@@ -130,7 +130,7 @@ exports.cbcDecryptAndRemovePadding = function(cipher, key, iv) {
 	return a;
 }
 
-function toLittleEndian(num) {
+exports.toLittleEndian = function(num) {
 	var l = num.toString(16);
 	if (l.length % 2 == 1) l = "0" + l;
 	var k = l.hexDecode();
@@ -143,7 +143,7 @@ exports.aesctr = function(key, nonce, data) {
 	var blocks = Math.ceil(data.length/16);
 	var stream = [];
 	for (var i = 0; i < blocks; i++) {
-		var d = nonce.concat(toLittleEndian(i));
+		var d = nonce.concat(exports.toLittleEndian(i));
 		for (var m = d.length; m < 16; m++) {
 			d.push(0);
 		}

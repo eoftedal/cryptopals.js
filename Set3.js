@@ -29,31 +29,34 @@ with(crypt) {
 		var cipher = cipherAndIv.slice(16)
 		var num = cipher.length/16;
 		var result = [];
-		for (var b = 0; b < num; b++) {
+		for (var b = 0; b < num; b++) { //Go block by block
 			var rndIv = Array.randomBytes(16);
 			var iv = cipherAndIv.slice(b*16, (b+1)*16);
-			for (var i = 1; i <= 16; i++) {
-				for (var g = 0; g < 256; g++) {
+			for (var i = 1; i <= 16; i++) { //Go byte by byte starting from last
+				for (var g = 0; g < 256; g++) { //Test all values for byte
 					try {
 						rndIv[16 - i] = g;
 						cbcDecryptAndRemovePadding(cipher.slice(b*16, (b+1)*16), key, rndIv);
 						var riv = rndIv.slice();
-						riv[16-i-1] = riv[16-i-1] ^ 0xff;
-						cbcDecryptAndRemovePadding(cipher.slice(b*16, (b+1)*16), key, riv);
-						break;
-					} catch(e) { /*console.log(e)*/ }
+						if (i == 1) { //Make sure we found the right padding for last byte and not 0x02 or larger
+							riv[16-i-1] = riv[16-i-1] ^ 0xff; 
+							cbcDecryptAndRemovePadding(cipher.slice(b*16, (b+1)*16), key, riv);
+						}
+						break; //We found the correct padding
+					} catch(e) { 
+						//We failed to find the right padding and have to try the next one 
+					}
 				}
 				if (g == 256) process.exit(1);
 				if (i < 16) {
 					for (var j = 1; j <= i; j++) {
-						rndIv[16-j] = rndIv[16-j] ^ i ^ (i+1);
+						rndIv[16-j] = rndIv[16-j] ^ i ^ (i+1); //Increment the padding count for the known bytes
 					} 
 				} else {
-					result = result.concat(rndIv.map((x,n) => iv[n] ^ 16 ^ x));
+					result = result.concat(rndIv.map((x,n) => iv[n] ^ 16 ^ x)); //Find plain by xoring with previous block
 				}
 			}
 		}
-		//console.log(result);
 		var pad = result[result.length -1];
 		for(var i = 0; i < pad; i++) result.pop();
 		console.log("Actual  : " + result.toAscii());
