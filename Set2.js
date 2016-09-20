@@ -13,13 +13,11 @@ with(crypt) {
 	console.log("\n")
 	console.log("*** Challenge 10 ***");
 	var c10data = fs.readFileSync("10.txt").toString();
-	var c10plain = cbcDecrypt(c10data, "YELLOW SUBMARINE", [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0])
-	//console.log(c10plain);
+	var c10plain = cbcDecrypt(c10data.base64Decode(), "YELLOW SUBMARINE", [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0])
 	var c10ciph = cbcEncrypt(c10plain.toByteArray(), "YELLOW SUBMARINE", [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]);
 	var c10a = c10data.base64Decode().hexEncode();
 	var c10b = c10ciph.base64Decode().hexEncode();
 	console.log("SAME RESULT: " + (c10a == c10b));
-	//console.log(cbcDecrypt(c10ciph, "YELLOW SUBMARINE", [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]))
 
 // ----
 	console.log("\n")
@@ -38,9 +36,8 @@ with(crypt) {
 	console.log("*** Challenge 12 ***");
 	var c12len = detect_key_length();
 	console.log("Detected key length: " + c12len);
-	var buf = new Buffer(c12len * 2);
-	buf.fill('A');
-	var c12_det = encryption_oracle_ecb(buf.toString()).hexEncode();
+	var data = Array.of(c12len * 2, 'A');
+	var c12_det = encryption_oracle_ecb(data.join('')).hexEncode();
 	console.log("Is CBC? " + (c12_det.substring(0, c12len*2) == c12_det.substring(c12len*2, c12len * 4)));
 	oracle_decrypt(c12len);
 
@@ -56,12 +53,11 @@ with(crypt) {
 	var c13key = generateKey(16);
 	function c13enc(email) {
 		var x = crypt.profile_for(email).toByteArray();
-		//console.log('enc', crypt.asciiToNum(crypt.aes256ecb_encrypt(new Buffer(crypt.pkcs7pad(x, 16)), c13key)));
-		return crypt.aes256ecb_encrypt(new Buffer(crypt.pkcs7pad(x, 16)), c13key).hexDecode();
+		return crypt.aes256ecb_encrypt(crypt.pkcs7pad(x, 16), c13key).hexDecode();
 	}
 	function c13dec(data) {
 		//console.log(data);
-		var nums = crypt.aes256ecb_decrypt(data.base64Encode(), c13key)
+		var nums = crypt.aes256ecb_decrypt(data, c13key)
 		nums = nums.slice(0, nums.length - nums[nums.length - 1]);
 		return crypt.parseParameters(nums.toAscii());
 	}
@@ -84,7 +80,7 @@ with(crypt) {
 	var plain = "secret".toByteArray();
 	var prev = "";
 	function enc_p(m) {
-		var d = new Buffer(crypt.pkcs7pad(prefix.concat(m).concat(plain), 16));
+		var d = crypt.pkcs7pad(prefix.concat(m).concat(plain), 16);
 		return crypt.aes256ecb_encrypt(d, key);
 	}
 	for (var i = 0; i < 48; i++) {
@@ -131,7 +127,7 @@ with(crypt) {
 		return crypt.cbcEncrypt(crypt.pkcs7pad(dt, 16), c15_key, c15_iv).base64Decode();
 	}
 	function c15_check(cipher) {
-		var k = crypt.cbcDecrypt(cipher.base64Encode(), c15_key, c15_iv);
+		var k = crypt.cbcDecrypt(cipher, c15_key, c15_iv);
 		return k.indexOf(";admin=true;") > -1;
 	}
 	var c15res = c15_encrypt("0123456789abcdef;admin=true".toByteArray());
@@ -139,6 +135,16 @@ with(crypt) {
 	c15res[32] ^= "_".toByte() ^ ";".toByte();
 	c15res[38] ^= "_".toByte() ^ "=".toByte();
 	console.log("HAS ;admin=true; AFTER FLIPS : ", c15_check(c15res));
+
+//---
+	console.log("\n")
+	console.log("*** Challenge 16 ***");
+	function c16_f(s, t) {
+		console.log("paddingValid - expected: " + t + " - was: " + crypt.paddingValid(s));
+	}
+	c16_f("ICE ICE BABY\x04\x04\x04\x04", true);
+	c16_f("ICE ICE BABY\x05\x05\x05\x05", false);
+	c16_f("ICE ICE BABY\x01\x02\x03\x04", false);
 }
 
 

@@ -4,7 +4,6 @@ String.prototype.hexDecode = function() {
 	return this.match(/../g).map(function(n) { return parseInt(n, 16); });
 }
 
-
 Array.prototype.hexEncode = function() {
 	return this.map(function(x) { return (x < 16 ? '0' : '') + x.toString(16); }).join("");
 }
@@ -35,6 +34,14 @@ String.prototype.toByte = function() {
 	return this.charCodeAt(0);
 }
 
+exports.paddingValid = function(n) {
+	var a = n.toByteArray();
+	var p = a[a.length - 1];
+	for (var i = 1; i <= p; i++) {
+		if (a[a.length - i] != p) return false;
+	}
+	return true;
+}
 
 exports.numOfAscii = function(data) {
 	return data.split(/[a-zA-Z ]/).length
@@ -64,18 +71,18 @@ exports.hamm = function(ascii1, ascii2) {
 	return exports.bits(ascii1.xor(ascii2));
 }
 
-exports.aes256ecb_decrypt = function(datab64, key) {
-	var cipher = crypto.createDecipheriv("aes-128-ecb", key, '');
+exports.aes256ecb_decrypt = function(data, key) {
+	var cipher = crypto.createDecipheriv("aes-128-ecb", new Buffer(key), '');
 	cipher.setAutoPadding(false);
-	var buf = cipher.update(datab64, 'base64');
+	var buf = cipher.update(new Buffer(data), 'base64');
 	buf = Buffer.concat([buf, cipher.final()]);
 	return buf.toString('hex').hexDecode();
 }
 
 exports.aes256ecb_encrypt = function(data, key) {
-	var cipher = crypto.createCipheriv("aes-128-ecb", key, '');
+	var cipher = crypto.createCipheriv("aes-128-ecb", new Buffer(key), '');
 	cipher.setAutoPadding(false);
-	var result = cipher.update(data, 'binary', 'hex');
+	var result = cipher.update(new Buffer(data), 'binary', 'hex');
 	result += cipher.final('hex');
 	return result;
 }
@@ -88,8 +95,8 @@ exports.pkcs7pad = function(data, length) {
 }
 
 exports.cbcDecrypt = function(data, key, iv) {
-	var ecb = exports.aes256ecb_decrypt(data, key);
-	var ciph = iv.concat(data.base64Decode());
+	var ecb = exports.aes256ecb_decrypt(data, new Buffer(key));
+	var ciph = iv.concat(data);
 	var result = [];
 	for (var i = 0; i < data.length; i+= iv.length) {
 		result.push(ecb.slice(i, i + iv.length).xor(ciph.slice(i, i + iv.length)));
@@ -101,10 +108,48 @@ exports.cbcEncrypt = function(data, key, iv) {
 	var result = new Buffer([]);
 	for (var i = 0; i < data.length; i  += iv.length) {
 		var b = data.slice(i, i+iv.length).xor(Array.prototype.slice.apply(pblock));
-		var pblock = new Buffer(exports.aes256ecb_encrypt(new Buffer(b), key), 'hex');
+		var pblock = new Buffer(exports.aes256ecb_encrypt(b, key), 'hex');
 		result = Buffer.concat([result, pblock]);
 	}
 	return result.toString('base64');
+}
+exports.padAndCbcEncrypt = function(data, key, iv) {
+	return exports.cbcEncrypt(exports.pkcs7pad(data, 16), key, iv);
+}
+exports.cbcDecryptAndRemovePadding = function(cipher, key, iv) {
+	var a = exports.cbcDecrypt(cipher, key, iv).toByteArray();
+	var pad = a[a.length - 1];
+	if (pad == 0 || pad > 16) throw new Error("Invalid padding");
+	for (var i = 1; i <= pad; i++) {
+		if (a[a.length - 1] == pad) {
+			a.pop();
+		} else {
+			throw new Error("Invalid padding");
+		}
+	}
+	return a;
+}
+
+function toLittleEndian(num) {
+	var l = num.toString(16);
+	if (l.length % 2 == 1) l = "0" + l;
+	var k = l.hexDecode();
+	k.reverse();
+	return k;
+}
+
+
+exports.aesctr = function(key, nonce, data) {
+	var blocks = Math.ceil(data.length/16);
+	var stream = [];
+	for (var i = 0; i < blocks; i++) {
+		var d = nonce.concat(toLittleEndian(i));
+		for (var m = d.length; m < 16; m++) {
+			d.push(0);
+		}
+		stream = stream.concat(exports.aes256ecb_encrypt(d, key).hexDecode());
+	}
+	return stream.slice(0, data.length).xor(data);
 }
 
 
