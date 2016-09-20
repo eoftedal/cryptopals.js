@@ -100,7 +100,7 @@ console.log("\n");
 
 console.log("*** Challenge 7 ***")
 with(crypt) {
-	var c7data = fs.readFileSync("7.txt").toString();
+	var c7data = fs.readFileSync("7.txt").toString().base64Decode();
 	var result = aes256ecb_decrypt(c7data, "YELLOW SUBMARINE");
 	console.log("Result: " + result.toAscii());
 }
