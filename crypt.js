@@ -55,6 +55,7 @@ exports.solveSingleCharacterXorWithKey = function(data) {
 	var selected = -1;
 	for(var i = 0; i < 256; i++) {
 		var res = exports.numOfAscii(data.xor([i]).toAscii())
+		//console.log(max, res, i);
 		if (res > max) {
 			selected = i;
 			max = res;

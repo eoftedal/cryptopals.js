@@ -160,8 +160,23 @@ with(crypt) {
 	})();
 
 
+	(function() {
+		console.log("\n*** Challenge 20 ***");
+		var dt = fs.readFileSync("20.txt", "utf-8").split(/\n/g).filter(x => x != "").map(x => x.base64Decode());
+		var min = 1000;
+		dt.forEach(x => {
+			if (x.length < min) min = x.length;			
+		});
+		console.log(min);
+		var key = Array.randomBytes(16);
+		var ciphers = dt.map(x => x.slice(0, min)).map(x => aesctr(key, Array.of(8, 0), x));
 
-
+		var key = [];
+		for (var i = 0; i < min; i++) {
+			key.push(solveSingleCharacterXorWithKey(ciphers.map(b => b[i])).key);
+		}
+		console.log(ciphers.map(x => x.xor(key).toAscii()).join("\n"));
+	})();
 
 
 
