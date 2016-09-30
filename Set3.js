@@ -178,11 +178,85 @@ with(crypt) {
 		console.log(ciphers.map(x => x.xor(key).toAscii()).join("\n"));
 	})();
 
+	(function() {
+		console.log("\n*** Challenge 21 ***");
+		var rnd = new MersenneTwister(1);
+		for (var i = 0; i < 5; i++) console.log(rnd.next());
+	})();
 
 
+	(function() {
+		console.log("\n*** Challenge 22 ***");
+		var begin = Date.now();
+		var r1 = Math.floor(Math.random() * 1000 * 1000 + 40 * 1000);
+		var r2 = Math.floor(Math.random() * 1000 * 1000 + 40 * 1000);
+		var rnd = new MersenneTwister(begin - r2);
+		var val = rnd.next();
+		console.log("Secret seed: " + (begin - r2));
+		var start = Math.floor((begin - r1 - r2) / 1000) * 1000;
+		var now = Date.now();
+		console.log("Between: ", start, now);
+		/*for (var i = start; i < now; i++) {
+			var rnd = new MersenneTwister(i); 
+			if (rnd.next() == val) {
+				console.log("Found seed: " + i);
+				break;
+			}
+		}	*/	
+	})();
+
+	(function() {
+		console.log("\n*** Challenge 23 ***");
+		var key = Array.randomBytes(8);
+		key = key[1] * 256 + key[0];		
+		var real = new MersenneTwister(key);
+		var fake = new MersenneTwister(1);
+
+		for (var i = 0; i < 1000; i++) {
+			var k = Math.floor(Math.random() * Math.pow(2,32));
+			var x = real.temper(k);
+			var y = fake.untemper(x);
+			if (k != y) console.log("Untemper failed for ", k, x, y);
+		}
+
+		var a = new Array(624).fill(0).map(x => real.next()).map(x => fake.untemper(x));
+		fake.setState(a);
+		for (var i = 0; i < 20; i++) {
+			console.log("Real: ", real.next(), " Faked: ", fake.next());
+		}
+
+	})();
+
+	(function() {
+		console.log("\n*** Challenge 24 ***");
+		var key = Array.randomBytes(2);
+		key = key[1] * 256 + key[0];
+		console.log("Key: ", key);
+		
+		var dt = Array.randomBytes(Math.floor(Math.random()* 20));
+		dt = dt.concat(Array.of(14, "A".toByte()));
+		var cipher = mtCrypt(key, dt);
+		var plain = mtCrypt(key, cipher);
+		plain.forEach((x,i) => x != dt[i] && console.log("Not equal for ", i, x, dt[i]));
+
+		var dummy = Array.of(cipher.length - 14, 0).concat(Array.of(14, "A".toByte()));
+		var found = false;
+		var known = cipher.slice(cipher.length - 14);
+		console.log("Expected postfix: " + known.hexEncode());
+		for (var k = 0; k < Math.pow(2,16); k++) {
+			var guess = mtCrypt(k, dummy).slice(cipher.length - 14);
+			if (guess.filter((x,i) => x != known[i]).length == 0) {
+				console.log("Found postfix: " + known.hexEncode());
+				console.log("Recovered key: " + k);
+				break;
+			}
+		}
+
+		//Did not do the last part of challenge 24, as I'm not exactly sure how we were meant
+		//to build the password token
 
 
-
+	})();
 
 
 

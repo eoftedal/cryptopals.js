@@ -260,6 +260,109 @@ exports.profile_for = function(email) {
 	return res;
 }
 
+exports.mtCrypt = function(key, data) {
+	var rnd = new exports.MersenneTwister(key);
+	var cipher = [];
+	var k;
+	var j = 0;
+	for (var i = 0; i < data.length; i++) {
+		if (j == 0) k = rnd.next();
+		cipher[i] = data[i] ^ ((k >>> (i*8)) & 0xff);
+		j = (j+1) % 4;
+	}
+	return cipher;
+}
 
+exports.MersenneTwister = function(seed) {
+	var w = 32,n = 624 ,m = 397, r = 31;
+	var u = 11, d =	0xFFFFFFFF;
+	var s = 7, b = 0x9D2C5680;
+	var t = 15, c = 0xEFC60000;
+	var l = 18;
+	var a = 0x9908B0DF;
+	var lower_mask = 0x7fffffff;;
+	var upper_mask = 0x80000000;
+	var f = 1812433253;
+
+	var mt = new Uint32Array(n);
+	mt.fill(0);
+	var index = n;
+
+	index = n;
+  mt[0] = seed >>> 0;
+  for (var i = 1; i < n; i++) { // loop over each element
+  	var ss = mt[i-1] ^ (mt[i-1] >>> w-2);
+    mt[i] = ((((((ss & 0xffff0000) >>> 16) * f) << 16) + (ss & 0x0000ffff) * f) + i) >>> 0;
+  }
+
+	function twist() {
+	   for(var i = 0; i < n; i++) {
+       var x = (mt[i] & upper_mask) + (mt[(i+1) % n] & lower_mask) >>> 0
+       mt[i] = mt[(i + m) % n] ^ x >>> 1
+
+       if ((x % 2) != 0) { // lowest bit of x is 1
+           mt[i] = mt[i] ^ a
+       }
+	   }
+	   index = 0;
+	}
+	function sl(x, sh) {
+		return x * Math.pow(2, sh);
+	}
+	function next() {
+		if (index >= n) twist();
+		y = mt[index++];
+		return temper(y);
+	}
+	function temper(y) {
+		y = (y ^ (y >>> u)) >>> 0;
+		y = (y ^ (sl(y, s) & b)) >>> 0;
+		y = (y ^ (sl(y, t) & c)) >>> 0;
+		y = (y ^ (y >>> l)) >>> 0;
+		return y;		
+	}
+
+
+	function untemper(y) {
+		y = ((y >>> l) ^ y) >>> 0; //the l=18 first bits are unaffected by the xor, so we can "fix"
+															// the top 14 by doing xor again
+		y = (y ^ (sl(y , t) & c)) >>> 0; // Only the top 16 bits can be affected because the first 16 bits
+									//of c are all 0. Thus we can just redo this operation even though we only shift 
+									// t=15 places  
+		var x = y;
+		//the original operation leaves the first 7 bits unaffected, so we can fix the next 7 bits by redoing
+		y = (x ^ (sl(y, s) & b)) >>> 0;
+		//now that the 14 first bits are back, we can redo to fix the next 7 
+		y = (x ^ (sl(y, s) & b)) >>> 0;
+		//21 are now correct and we redo to fix the next 7
+		y = (x ^ (sl(y, s) & b)) >>> 0;
+		//28 are now ok so we redo to fix the last 4
+		y = (x ^ (sl(y, s) & b)) >>> 0; 
+		x = y;
+		//We have to do this twice to first fix bits 12-22
+		y = (x ^ ((y >>> 11))) >>> 0;
+		//and then fix 23-32
+		y = (x ^ ((y >>> 11))) >>> 0;
+		return y;
+	}
+	function setState(state) {
+		state.forEach((x,i) => mt[i] = x);
+	}
+
+	return {
+		next,
+		temper,
+		untemper,
+		setState
+	}
+
+
+}
+
+exports.passwordResetTokenMT = function() {	
+	var secret = "SECRET".toByteArray();
+	var dt = Array.randomBytes(Math.floor(Math.random()* 20));
+	return exports.mtCrypt(Date.now(), dt.concat(secret));
+}
 
 
